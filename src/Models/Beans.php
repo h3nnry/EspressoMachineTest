@@ -11,14 +11,6 @@ use SoConnect\Coffee\Interfaces\BeansContainer;
  */
 class Beans extends AbstractContainer implements BeansContainer
 {
-    /**
-     * Beans constructor.
-     * @param int $total
-     */
-    public function __construct(int $total = 50)
-    {
-        parent::__construct($total);
-    }
 
     /**
      * @param int $numSpoons

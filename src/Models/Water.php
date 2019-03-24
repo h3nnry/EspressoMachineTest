@@ -11,14 +11,6 @@ use SoConnect\Coffee\Interfaces\WaterContainer;
  */
 class Water extends AbstractContainer implements WaterContainer
 {
-    /**
-     * Water constructor.
-     * @param float $total
-     */
-    public function __construct(float $total = 2)
-    {
-        parent::__construct($total);
-    }
 
     /**
      * @param float $litres

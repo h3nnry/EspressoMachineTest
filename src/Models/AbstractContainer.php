@@ -57,4 +57,20 @@ abstract class AbstractContainer
     {
         return $this->total;
     }
+
+    /**
+     * @param $value
+     */
+    public function getSelectedSize($value)
+    {
+        $this->selectedSize = $value;
+    }
+
+    /**
+     * @param $value
+     */
+    public function setSelectedSize($value)
+    {
+        $this->selectedSize = $value;
+    }
 }

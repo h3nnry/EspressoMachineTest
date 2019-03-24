@@ -28,6 +28,18 @@ class EspressoMachine implements EspressoMachineInterface
     /** @var float  */
     const DOUBLE_ESPRESSO_WATER_VOLUME = 0.1;
 
+    /** @var float  */
+    const STANDART_WATER_CONTAINER_VOLUME = 2.0;
+
+    /** @var float */
+    const ATTACHED_WATER_CONTAINER_VOLUME = 10.0;
+
+    /** @var int  */
+    const STANDART_BEANS_CONTAINER_NUMBER = 50;
+
+    /** @var int  */
+    const ATTACHED_BEANS_CONTAINER_NUMBER = 200;
+
     /** @var WaterContainer */
     private $waterContainer;
 
@@ -37,14 +49,15 @@ class EspressoMachine implements EspressoMachineInterface
     /** @var float */
     private $volumeCoffeeMaid = 0.0;
 
+    /** @var bool */
+    private $waterSuppliedThroughPipes = false;
+
     /**
      * EspressoMachine constructor.
-     * @param WaterContainer $waterContainer
-     * @param BeansContainer $beansContainer
      */
-    public function __construct(WaterContainer $waterContainer, BeansContainer $beansContainer) {
-        $this->waterContainer = $waterContainer;
-        $this->beansContainer = $beansContainer;
+    public function __construct() {
+        $this->waterContainer = new Water(self::STANDART_WATER_CONTAINER_VOLUME);
+        $this->beansContainer = new Beans(self::STANDART_BEANS_CONTAINER_NUMBER);
     }
 
     /**
@@ -72,16 +85,17 @@ class EspressoMachine implements EspressoMachineInterface
      */
     public function getStatus() : string
     {
-        if ($this->waterContainer->getWater() <= 0 && $this->beansContainer->getBeans() <= 0) {
+        if (!$this->waterSuppliedThroughPipes && $this->waterContainer->getWater() <= 0
+            && $this->beansContainer->getBeans() <= 0) {
             return 'Need to supply machine with beans and water';
+        }
+
+        if (!$this->waterSuppliedThroughPipes && $this->waterContainer->getWater() <= 0) {
+            return 'Need to supply machine with water';
         }
 
         if ($this->beansContainer->getBeans() <= 0) {
             return 'Need to supply machine with beans';
-        }
-
-        if($this->waterContainer->getWater() <= 0) {
-            return 'Need to supply machine with water';
         }
 
         return $this->getNumberEspressoCanPrepare() . ' espresso to prepare';
@@ -93,13 +107,14 @@ class EspressoMachine implements EspressoMachineInterface
      */
     public function addWater($litres) :void
     {
-        try {
-            $this->waterContainer->addWater($litres);
+        if (!$this->waterSuppliedThroughPipes) {
+            try {
+                $this->waterContainer->addWater($litres);
+            }
+            catch(ContainerFullException $e) {
+                throw new EspressoMachineException($e->getMessage());
+            }
         }
-        catch(ContainerFullException $e) {
-            throw new EspressoMachineException($e->getMessage());
-        }
-
     }
 
     /**
@@ -142,11 +157,11 @@ class EspressoMachine implements EspressoMachineInterface
      */
     private function prepareCoffee(float $waterVolume, int $beansNumber) : float
     {
-        if($this->waterContainer->getWater() < $waterVolume) {
+        if (!$this->waterSuppliedThroughPipes && $this->waterContainer->getWater() < $waterVolume) {
             throw new NoWaterException();
         }
 
-        if($this->beansContainer->getBeans() < $beansNumber) {
+        if ($this->beansContainer->getBeans() < $beansNumber) {
             throw new NoBeansException();
         }
         
@@ -162,11 +177,45 @@ class EspressoMachine implements EspressoMachineInterface
      */
     private function getNumberEspressoCanPrepare() : int
     {
-        return min(
-            $this->beansContainer->getBeans(),
-            floor($this->waterContainer->getWater() / self::SINGLE_ESPRESSO_WATER_VOLUME)
-        );
+        return $this->waterSuppliedThroughPipes
+            ? $this->beansContainer->getBeans()
+            :  min(
+                $this->beansContainer->getBeans(),
+                floor($this->waterContainer->getWater() / self::SINGLE_ESPRESSO_WATER_VOLUME)
+            );
 
+    }
+
+    /**
+     * Attach bigger container
+     */
+    public function attachBeanContainer() : void
+    {
+        $this->beansContainer->setSelectedSize(self::ATTACHED_BEANS_CONTAINER_NUMBER);
+    }
+
+    /**
+     * Attach bigger container
+     */
+    public function attachWaterContainer() : void
+    {
+        $this->waterContainer->setSelectedSize( self::ATTACHED_WATER_CONTAINER_VOLUME);
+    }
+
+    /**
+     * Set water supply through pipes
+     */
+    public function setWaterSupplyThroughPipes() : void
+    {
+        $this->waterSuppliedThroughPipes = true;
+    }
+
+    /**
+     * Unset water supply through pipes
+     */
+    public function unsetWaterSupplyThroughPipes() : void
+    {
+        $this->waterSuppliedThroughPipes = false;
     }
 
 }
